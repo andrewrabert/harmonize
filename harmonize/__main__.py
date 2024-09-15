@@ -13,7 +13,7 @@ import tempfile
 import mutagen
 import mutagen.mp3
 
-from . import decoders, encoders
+from . import decoders, encoders, transcode_cover
 
 LOGGER = logging.getLogger('harmonize')
 
@@ -49,6 +49,13 @@ class Targets:
             split_name = source_path.name.split('.')
             if len(split_name) > 1 and split_name[-1].lower() in ('flac', 'mp3'):
                 split_name[-1] = self.target_codec
+                name = '.'.join(split_name)
+                if pathlib.Path(source_path.parent, name).exists():
+                    # TODO: not sure how to handle this
+                    LOGGER.error('Duplicate file found: %s', source_path)
+                    raise NotImplementedError
+            elif len(split_name) > 1 and split_name[-1].lower() == 'png':
+                split_name[-1] = 'jpg'
                 name = '.'.join(split_name)
                 if pathlib.Path(source_path.parent, name).exists():
                     # TODO: not sure how to handle this
@@ -141,13 +148,15 @@ async def sync_path(source, target, encoder):
             return
 
         target.parent.mkdir(parents=True, exist_ok=True)
-        with TempPath(dir=target.parent, suffix='.temp') as temp_target:
+        with TempPath(dir=target.parent, suffix=target.suffix) as temp_target:
             if source.suffix.lower() == '.flac':
                 await transcode(decoders.flac, encoder, source, temp_target)
                 copy_audio_metadata(source, temp_target)
             elif source.suffix.lower() == '.mp3':
                 await transcode(decoders.mp3, encoder, source, temp_target)
                 copy_audio_metadata(source, temp_target)
+            elif source.suffix.lower() in ('.jpg', '.png'):
+                await transcode_cover.transcode_image(source, temp_target)
             else:
                 copy(source, temp_target)
             copy_path_attr(source_lstat, temp_target)
