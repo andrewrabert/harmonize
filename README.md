@@ -13,7 +13,7 @@ Create and synchronize transcoded copies of audio folders.
 ## History
 
 My audio library is comprised of FLACs, MP3s, cover images, and various
-metadata files - totaling roughly 500GB. This is not a problem when I'm on my
+metadata files. This is not a problem when I'm on my
 desktop - wired into the same network as my server. However, my laptop and
 phone use often suffers from poor connectivity and limited storage capacities.
 Further, lossless audio often is a waste as my laptop and phone are used in
