@@ -1,18 +1,19 @@
 import asyncio
+import pathlib
+
+import mozjpeg_lossless_optimization
 
 
 async def get_resolution(path):
     resolution = {
-        'width': None,
-        'height': None,
+        "width": None,
+        "height": None,
     }
     resolution = []
-    for dimension in 'width', 'height':
+    for dimension in "width", "height":
         proc = await asyncio.create_subprocess_exec(
-            'vipsheader',
-            '-f', dimension,
-            '--', path,
-            stdout=asyncio.subprocess.PIPE)
+            "vipsheader", "-f", dimension, "--", path, stdout=asyncio.subprocess.PIPE
+        )
         stdout, _ = await proc.communicate()
         if proc.returncode:
             raise ProcessError(proc)
@@ -22,9 +23,8 @@ async def get_resolution(path):
 
 async def generate_thumbnail(source, target, res):
     proc = await asyncio.create_subprocess_exec(
-        'vips', 'thumbnail',
-        source, target,
-        str(res))
+        "vips", "thumbnail", source, target, str(res)
+    )
     await proc.wait()
     if proc.returncode:
         raise ProcessError(proc)
@@ -32,11 +32,20 @@ async def generate_thumbnail(source, target, res):
 
 async def optimize_jpeg(path):
     proc = await asyncio.create_subprocess_exec(
-        'jpegoptim', '--quiet', '--all-progressive',
-        '--force', '--strip-all', '--', path)
-    await proc.wait()
+        "jpegoptim",
+        "--quiet",
+        "--all-progressive",
+        "--force",
+        "--strip-all",
+        "--stdout",
+        "--",
+        path,
+        stdout=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await proc.communicate()
     if proc.returncode:
         raise ProcessError(proc)
+    pathlib.Path(path).write_bytes(mozjpeg_lossless_optimization.optimize(stdout))
 
 
 class ProcessError(Exception):
@@ -47,16 +56,16 @@ class ProcessError(Exception):
     def __str__(self):
         proc = self.process
 
-        text = f'exit {proc.returncode}'
+        text = f"exit {proc.returncode}"
         if self.message is not None:
-            text = f'{text} - {self.message}'
+            text = f"{text} - {self.message}"
 
         try:
-            args = proc._transport._extra['subprocess'].args
+            args = proc._transport._extra["subprocess"].args
         except (AttributeError, KeyError):
             pass
         else:
-            text = f'{text}: {args}'
+            text = f"{text}: {args}"
         return text
 
 

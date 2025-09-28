@@ -4,10 +4,15 @@ import os
 
 async def lame(stdin_pipe, target, options=[]):
     proc = await asyncio.create_subprocess_exec(
-        'lame', '--quiet', *[str(o) for o in options], '-', target,
+        "lame",
+        "--quiet",
+        *[str(o) for o in options],
+        "-",
+        target,
         stdin=stdin_pipe,
         stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE)
+        stderr=asyncio.subprocess.PIPE,
+    )
     os.close(stdin_pipe)
 
     await proc.wait()
@@ -16,17 +21,14 @@ async def lame(stdin_pipe, target, options=[]):
     stderr = await proc.stderr.read()
     if proc.returncode or stderr:
         raise asyncio.subprocess.CalledProcessError(
-            proc.returncode,
-            proc.args,
-            output=proc.stdout.read(),
-            proc=stderr
+            proc.returncode, proc.args, output=proc.stdout.read(), proc=stderr
         )
 
 
 async def opus(stdin_pipe, target, options=[]):
     proc = await asyncio.create_subprocess_exec(
-        'opusenc', '--quiet', *[str(o) for o in options], '-', target,
-        stdin=stdin_pipe)
+        "opusenc", "--quiet", *[str(o) for o in options], "-", target, stdin=stdin_pipe
+    )
     os.close(stdin_pipe)
 
     await proc.wait()

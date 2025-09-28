@@ -15,16 +15,15 @@ import mutagen.mp3
 
 from . import decoders, encoders, transcode_cover
 
-LOGGER = logging.getLogger('harmonize')
+LOGGER = logging.getLogger("harmonize")
 
 try:
-    VERSION = importlib.metadata.version('harmonize')
+    VERSION = importlib.metadata.version("harmonize")
 except importlib.metadata.PackageNotFoundError:
-    VERSION = 'unknown'
+    VERSION = "unknown"
 
 
 class Targets:
-
     def __init__(self, source_base, target_base, target_codec, exclude):
         """
         :param pathlib.Path base: Base path for all targets
@@ -46,26 +45,27 @@ class Targets:
         if source_path.is_dir():
             name = source_path.name
         else:
-            split_name = source_path.name.split('.')
-            if len(split_name) > 1 and split_name[-1].lower() in ('flac', 'mp3'):
+            split_name = source_path.name.split(".")
+            if len(split_name) > 1 and split_name[-1].lower() in ("flac", "mp3"):
                 split_name[-1] = self.target_codec
-                name = '.'.join(split_name)
+                name = ".".join(split_name)
                 if pathlib.Path(source_path.parent, name).exists():
                     # TODO: not sure how to handle this
-                    LOGGER.error('Duplicate file found: %s', source_path)
+                    LOGGER.error("Duplicate file found: %s", source_path)
                     raise NotImplementedError
-            elif len(split_name) > 1 and split_name[-1].lower() == 'png':
-                split_name[-1] = 'jpg'
-                name = '.'.join(split_name)
+            elif len(split_name) > 1 and split_name[-1].lower() == "png":
+                split_name[-1] = "jpg"
+                name = ".".join(split_name)
                 if pathlib.Path(source_path.parent, name).exists():
                     # TODO: not sure how to handle this
-                    LOGGER.error('Duplicate file found: %s', source_path)
+                    LOGGER.error("Duplicate file found: %s", source_path)
                     raise NotImplementedError
             else:
                 name = source_path.name
 
         target_path = self.target_base.joinpath(
-            source_path.parent.relative_to(self.source_base), name)
+            source_path.parent.relative_to(self.source_base), name
+        )
         self._paths.add(target_path)
         return target_path
 
@@ -74,17 +74,16 @@ class Targets:
         for root, _, files in os.walk(self.target_base):
             root_path = pathlib.Path(root)
             root_path_source = pathlib.Path(
-                self.source_base,
-                root_path.relative_to(self.target_base)
+                self.source_base, root_path.relative_to(self.target_base)
             )
             if root_path_source.is_dir():
                 for path_str in files:
                     path = pathlib.Path(root, path_str)
                     if path not in self._paths:
-                        LOGGER.info('Deleting %s', path)
+                        LOGGER.info("Deleting %s", path)
                         _delete_if_exists(path)
             else:
-                LOGGER.info('Deleting %s', root_path)
+                LOGGER.info("Deleting %s", root_path)
                 _delete_if_exists(root_path)
 
     def _get_paths(self):
@@ -105,7 +104,7 @@ class Targets:
                 target_path = self.build_target_path(path)
                 count += 1
                 yield path, target_path
-        LOGGER.info('Scanned %d items', count)
+        LOGGER.info("Scanned %d items", count)
 
 
 def _delete_if_exists(path):
@@ -149,13 +148,13 @@ async def sync_path(source, target, encoder):
 
         target.parent.mkdir(parents=True, exist_ok=True)
         with TempPath(dir=target.parent, suffix=target.suffix) as temp_target:
-            if source.suffix.lower() == '.flac':
+            if source.suffix.lower() == ".flac":
                 await transcode(decoders.flac, encoder, source, temp_target)
                 copy_audio_metadata(source, temp_target)
-            elif source.suffix.lower() == '.mp3':
+            elif source.suffix.lower() == ".mp3":
                 await transcode(decoders.mp3, encoder, source, temp_target)
                 copy_audio_metadata(source, temp_target)
-            elif source.suffix.lower() in ('.jpg', '.png'):
+            elif source.suffix.lower() in (".jpg", ".png"):
                 await transcode_cover.transcode_image(source, temp_target)
             else:
                 copy(source, temp_target)
@@ -165,10 +164,7 @@ async def sync_path(source, target, encoder):
 
 def copy_path_attr(source_lstat, target):
     target.chmod(source_lstat.st_mode)
-    os.utime(
-        target,
-        (target.lstat().st_atime, source_lstat.st_mtime)
-    )
+    os.utime(target, (target.lstat().st_atime, source_lstat.st_mtime))
 
 
 def copy(source, target):
@@ -185,10 +181,10 @@ def copy(source, target):
                 return
             else:
                 _delete_if_exists(target)
-        LOGGER.info('Creating %s', source)
+        LOGGER.info("Creating %s", source)
         target.mkdir(exist_ok=True, parents=True)
     else:
-        LOGGER.info('Copying %s', source)
+        LOGGER.info("Copying %s", source)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(source, target)
 
@@ -233,16 +229,13 @@ async def transcode(decoder, encoder, source, target):
     :param pathlib.Path source:
     :param pathlib.Path target:
     """
-    LOGGER.info('Transcoding %s', source)
+    LOGGER.info("Transcoding %s", source)
     target.parent.mkdir(parents=True, exist_ok=True)
     async with decoder(source) as decoded:
         await encoder(decoded, target)
 
 
-_CODEC_ENCODERS = {
-    'mp3': encoders.lame,
-    'opus': encoders.opus
-}
+_CODEC_ENCODERS = {"mp3": encoders.lame, "opus": encoders.opus}
 
 
 class AsyncExecutor:
@@ -265,7 +258,8 @@ class AsyncExecutor:
             self._fill()
 
             done, self._pending = await asyncio.wait(
-                self._pending, return_when=asyncio.FIRST_COMPLETED)
+                self._pending, return_when=asyncio.FIRST_COMPLETED
+            )
 
             for result in done:
                 yield result
@@ -283,17 +277,14 @@ async def run(executor):
         try:
             result = result.result()
         except Exception as e:
-            print('error', type(e).__name__, e)
+            print("error", type(e).__name__, e)
         else:
-            print('slept', result)
+            print("slept", result)
 
 
 async def async_run(args, encoder_options):
-    encoder = functools.partial(
-        _CODEC_ENCODERS[args.codec], options=encoder_options)
-    targets = Targets(
-        args.source, args.target, args.codec,
-        exclude=args.exclude)
+    encoder = functools.partial(_CODEC_ENCODERS[args.codec], options=encoder_options)
+    targets = Targets(args.source, args.target, args.codec, exclude=args.exclude)
 
     executor = AsyncExecutor(args.num_processes)
     for source, target in sorted(targets._get_paths()):
@@ -303,42 +294,52 @@ async def async_run(args, encoder_options):
 
     targets.sanitize()
 
-    LOGGER.info('Processing complete')
+    LOGGER.info("Processing complete")
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--codec', default='mp3', choices=_CODEC_ENCODERS,
-        help=('codec to output as. encoder configuration may be specified as '
-              'additional arguments to harmonize'))
-    parser.add_argument(
-        '-n', dest='num_processes',
-        help='Number of processes to use',
-        type=int,
-        default=os.cpu_count())
-    parser.add_argument(
-        '-q', '--quiet', action='store_true',
-        help='suppress informational output')
-    parser.add_argument(
-        '--version', action='version', version=VERSION,
+        "--codec",
+        default="mp3",
+        choices=_CODEC_ENCODERS,
+        help=(
+            "codec to output as. encoder configuration may be specified as "
+            "additional arguments to harmonize"
+        ),
     )
     parser.add_argument(
-        '--exclude', metavar='PATTERN', action='append',
-        help='ignore files matching this pattern')
+        "-n",
+        dest="num_processes",
+        help="Number of processes to use",
+        type=int,
+        default=os.cpu_count(),
+    )
     parser.add_argument(
-        'source', type=pathlib.Path, help='Source directory')
+        "-q", "--quiet", action="store_true", help="suppress informational output"
+    )
     parser.add_argument(
-        'target', type=pathlib.Path, help='Target directory')
+        "--version",
+        action="version",
+        version=VERSION,
+    )
+    parser.add_argument(
+        "--exclude",
+        metavar="PATTERN",
+        action="append",
+        help="ignore files matching this pattern",
+    )
+    parser.add_argument("source", type=pathlib.Path, help="Source directory")
+    parser.add_argument("target", type=pathlib.Path, help="Target directory")
 
     args, encoder_options = parser.parse_known_args()
 
     logging.basicConfig(
-        format='%(message)s',
-        level=logging.WARNING if args.quiet else logging.INFO)
+        format="%(message)s", level=logging.WARNING if args.quiet else logging.INFO
+    )
 
     asyncio.run(async_run(args, encoder_options))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

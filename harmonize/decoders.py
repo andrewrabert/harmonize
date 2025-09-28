@@ -17,9 +17,8 @@ async def flac(path):
     read_pipe, write_pipe = os.pipe()
 
     proc = await asyncio.create_subprocess_exec(
-        'flac', '-csd', path,
-        stdout=write_pipe,
-        stderr=asyncio.subprocess.PIPE)
+        "flac", "-csd", path, stdout=write_pipe, stderr=asyncio.subprocess.PIPE
+    )
 
     os.close(write_pipe)
 
@@ -29,9 +28,7 @@ async def flac(path):
     stderr = await proc.stderr.read()
     if proc.returncode:
         raise asyncio.subprocess.CalledProcessError(
-            proc.returncode,
-            proc.args,
-            stderr=stderr
+            proc.returncode, proc.args, stderr=stderr
         )
     if stderr:
         LOGGER.warning('Decode "%s" "%s"', path, stderr)
@@ -46,9 +43,15 @@ async def mp3(path):
     read_pipe, write_pipe = os.pipe()
 
     proc = await asyncio.create_subprocess_exec(
-        'ffmpeg', '-i', path, '-f', 'wav', '-',
+        "ffmpeg",
+        "-i",
+        path,
+        "-f",
+        "wav",
+        "-",
         stdout=write_pipe,
-        stderr=asyncio.subprocess.PIPE)
+        stderr=asyncio.subprocess.PIPE,
+    )
 
     os.close(write_pipe)
 
@@ -58,7 +61,5 @@ async def mp3(path):
     stderr = await proc.stderr.read()
     if proc.returncode:
         raise asyncio.subprocess.CalledProcessError(
-            proc.returncode,
-            proc.args,
-            stderr=stderr
+            proc.returncode, proc.args, stderr=stderr
         )
