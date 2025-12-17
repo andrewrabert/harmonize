@@ -148,7 +148,7 @@ async def sync_path(source, target, encoder):
             else:
                 copy(source, temp_target)
             copy_path_attr(source_lstat, temp_target)
-            temp_target.rename(target)
+            temp_target.replace(target)
 
 
 def copy_path_attr(source_lstat, target):
