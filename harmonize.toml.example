@@ -1,0 +1,14 @@
+[harmonize]
+source = "/media/source"
+target = "/media/target"
+
+[converters.opus]
+command = ["ffmpeg", "-y", "-i", "{input}", "-c:a", "libopus", "-b:a", "128k", "{output}"]
+
+[converters.jpg]
+command = ["magick", "{input}", "-quality", "85", "-resize", "1920x1920>", "{output}"]
+
+[mappings]
+".flac" = { converter = "opus", output_ext = ".opus" }
+".mp3" = { converter = "opus", output_ext = ".opus" }
+".png" = { converter = "jpg", output_ext = ".jpg" }
