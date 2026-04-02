@@ -47,14 +47,13 @@ def _matches_any(path, patterns):
     return any(fnmatch.fnmatch(name, p) for p in patterns)
 
 
-def _all_files(root):
+def _walk(root):
     stack = [root]
     while stack:
         for path in stack.pop().iterdir():
             if path.is_dir():
                 stack.append(path)
-            else:
-                yield path
+            yield path
 
 
 def build_target_path(source_path, source_base, target_base, mappings):
@@ -133,8 +132,7 @@ def _delete_if_exists(path):
         pass
 
 
-def sanitize(config, known_targets):
-    """Remove orphaned files from target directory."""
+def sanitize(config, known_targets, known_dirs):
     if not config.target.is_dir():
         return
     for root, dirs, files in os.walk(config.target):
@@ -149,10 +147,12 @@ def sanitize(config, known_targets):
             LOGGER.info("Deleting %s", path)
             _delete_if_exists(path)
 
-    # Remove empty directories (bottom-up)
+    # Remove empty directories (bottom-up), preserving known source dirs
     for root, dirs, files in os.walk(config.target, topdown=False):
         root_path = pathlib.Path(root)
         if root_path == config.target:
+            continue
+        if root_path in known_dirs:
             continue
         try:
             root_path.rmdir()  # only removes if empty
@@ -167,9 +167,18 @@ async def run(config, dry_run=False):
     jobs = config.jobs if config.jobs > 0 else os.cpu_count()
     executor = AsyncExecutor(jobs)
     known_targets = set()
+    known_dirs = set()
     count = 0
 
-    for source_path in sorted(_all_files(config.source)):
+    source_files = []
+    source_dirs = []
+    for path in _walk(config.source):
+        if path.is_dir():
+            source_dirs.append(path)
+        else:
+            source_files.append(path)
+
+    for source_path in sorted(source_files):
         rel = str(source_path.relative_to(config.source))
         if _matches_any(rel, config.source_exclude):
             continue
@@ -193,12 +202,23 @@ async def run(config, dry_run=False):
         else:
             executor.submit(sync_file, source_path, target_path, config)
 
+    for source_dir in sorted(source_dirs):
+        rel_path = source_dir.relative_to(config.source)
+        if _matches_any(str(rel_path), config.source_exclude):
+            continue
+        target_dir = config.target / rel_path
+        known_dirs.add(target_dir)
+        if dry_run:
+            LOGGER.info("Would create directory %s", target_dir)
+        else:
+            target_dir.mkdir(parents=True, exist_ok=True)
+
     LOGGER.info("Scanned %d items", count)
 
     async for result in executor.as_completed():
         result.result()
 
     if not dry_run:
-        sanitize(config, known_targets)
+        sanitize(config, known_targets, known_dirs)
 
     LOGGER.info("Processing complete")

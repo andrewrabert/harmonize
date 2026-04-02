@@ -189,6 +189,33 @@ def test_converter_keeps_extension_when_same(tmp_dir):
     assert (target / "photo.jpg").read_text() == "image data"
 
 
+def test_copies_empty_directories(tmp_dir):
+    source = tmp_dir / "source"
+    target = tmp_dir / "target"
+    (source / "empty_dir").mkdir()
+    (source / "nested" / "empty").mkdir(parents=True)
+
+    cfg = write_config(tmp_dir)
+    asyncio.run(run(cfg))
+
+    assert (target / "empty_dir").is_dir()
+    assert (target / "nested" / "empty").is_dir()
+
+
+def test_empty_directories_survive_resync(tmp_dir):
+    source = tmp_dir / "source"
+    target = tmp_dir / "target"
+    (source / "empty_dir").mkdir()
+    (source / "file.txt").write_text("content")
+
+    cfg = write_config(tmp_dir)
+    asyncio.run(run(cfg))
+    asyncio.run(run(cfg))
+
+    assert (target / "empty_dir").is_dir()
+    assert (target / "file.txt").exists()
+
+
 def test_empty_source_directory(tmp_dir):
     cfg = write_config(tmp_dir)
     asyncio.run(run(cfg))
