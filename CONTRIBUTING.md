@@ -1,7 +1,9 @@
 # Contributing
+
 ## Testing
-Both ffmpeg and ffprobe must be present in addition to all of harmonize's requirements.
+
+Both ffmpeg and ffprobe must be installed for integration tests.
 
 ```
-python -m unittest discover tests
+cargo test
 ```

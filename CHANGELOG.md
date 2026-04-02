@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.0
+
+* Rewrite in Rust
+* Add TOML config file support with arbitrary converters and file mappings
+* Add `--config`, `--stdin`, `--dry-run`, `--exclude` flags
+* Add orphan cleanup with `target_exclude` protection
+* Add `source_exclude` for filtering source files
+* Legacy mode now uses ffmpeg instead of flac/lame/opusenc
+* Remove Python/mutagen dependency
+
 ## 1.0.2 (2020-07-02)
 
 * Read source mtime only once as source may change during transcode
